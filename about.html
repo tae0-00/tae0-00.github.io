@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>About · 김태경 포트폴리오</title>
+<meta name="description" content="기획과 구조 설계를 함께 고민하는 개발자 김태경 — 전환 스토리와 일하는 방식." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+
+<style>
+  :root{
+    --paper:#EFEADB; --paper-2:#E5DECB;
+    --forest:#14302A; --forest-2:#1C3D35;
+    --ink:#16302A; --ink-soft:#42564E;
+    --cream:#F4F0E4; --gold:#BE9038; --gold-soft:#C9A857; --vermilion:#BC4A30; --teal:#2E7D5B;
+    --line:rgba(22,48,42,.14); --line-strong:rgba(22,48,42,.28); --line-cream:rgba(244,240,228,.16);
+    --serif:'Gowun Batang', serif;
+    --sans:'Pretendard', -apple-system, sans-serif;
+    --mono:'IBM Plex Mono', monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+  ::selection{background:var(--gold);color:var(--forest);}
+
+  .grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:64px 64px;opacity:.5;
+    -webkit-mask-image:radial-gradient(ellipse 120% 90% at 50% 20%,#000 40%,transparent 100%);
+            mask-image:radial-gradient(ellipse 120% 90% at 50% 20%,#000 40%,transparent 100%);}
+  .wrap{position:relative;z-index:1;}
+  .container{max-width:1080px;margin:0 auto;padding:0 28px;}
+  .mono{font-family:var(--mono);}
+
+  /* NAV */
+  nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;justify-content:space-between;align-items:center;
+    padding:16px 28px;transition:background .35s,padding .35s,box-shadow .35s;}
+  nav.scrolled{background:rgba(239,234,219,.9);backdrop-filter:blur(10px);padding:11px 28px;box-shadow:0 1px 0 var(--line);}
+  .brand{font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--ink);font-weight:500;}
+  .brand b{color:var(--vermilion);}
+  .back-link{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--ink-soft);text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:color .25s,gap .25s;}
+  .back-link:hover{color:var(--ink);gap:12px;}
+
+  /* HERO */
+  .phero{position:relative;background:var(--forest);color:var(--cream);padding:150px 0 72px;overflow:hidden;}
+  .phero .contour{position:absolute;top:-18%;right:-10%;width:620px;height:620px;opacity:.32;color:var(--gold-soft);}
+  .phero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--line-cream) 1px,transparent 1px),linear-gradient(90deg,var(--line-cream) 1px,transparent 1px);background-size:80px 80px;
+    -webkit-mask-image:radial-gradient(ellipse 90% 90% at 60% 30%,#000 10%,transparent 80%);mask-image:radial-gradient(ellipse 90% 90% at 60% 30%,#000 10%,transparent 80%);}
+  .phero-inner{position:relative;z-index:2;}
+  .phero .meta{font-family:var(--mono);font-size:12px;letter-spacing:.16em;color:var(--gold-soft);text-transform:uppercase;margin-bottom:22px;display:flex;align-items:center;gap:12px;}
+  .phero .meta::before{content:'';width:30px;height:1px;background:var(--gold-soft);}
+  .phero h1{font-family:var(--serif);font-size:clamp(2.2rem,5.6vw,3.6rem);font-weight:700;line-height:1.22;letter-spacing:-.01em;}
+  .phero h1 b{color:var(--gold-soft);}
+  .phero .sub{font-size:1.04rem;color:rgba(244,240,228,.82);max-width:50ch;margin-top:26px;line-height:1.8;}
+
+  /* SECTION */
+  .sec{padding:92px 0 10px;}
+  .sec:first-of-type{padding-top:84px;}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:16px;}
+  .sec-num{font-family:var(--mono);font-size:13px;color:var(--vermilion);}
+  .sec-title{font-family:var(--serif);font-size:clamp(1.5rem,3.6vw,2.1rem);font-weight:700;}
+  .sec-sub{font-family:var(--mono);font-size:12px;color:var(--ink-soft);letter-spacing:.06em;margin-left:auto;align-self:center;}
+  @media(max-width:680px){.sec-sub{display:none;}}
+  .sec-rule{height:1px;background:var(--line-strong);margin-bottom:40px;}
+
+  /* STORY */
+  .story{max-width:72ch;}
+  .story p{font-size:1.05rem;color:var(--ink-soft);margin-bottom:22px;line-height:1.9;}
+  .story p strong{color:var(--ink);font-weight:700;}
+  .story .pull{font-family:var(--serif);font-size:clamp(1.3rem,2.8vw,1.7rem);line-height:1.55;color:var(--ink);border-left:2px solid var(--gold);padding-left:26px;margin:38px 0;}
+
+  /* APPROACH FLOW */
+  .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-strong);border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;margin-top:10px;}
+  @media(max-width:760px){.flow{grid-template-columns:1fr;}}
+  .flow-step{background:var(--cream);padding:30px 28px;position:relative;}
+  .flow-step .n{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--vermilion);margin-bottom:14px;}
+  .flow-step .t{font-family:var(--serif);font-size:1.22rem;font-weight:700;margin-bottom:12px;line-height:1.3;}
+  .flow-step .d{font-size:.93rem;color:var(--ink-soft);line-height:1.7;}
+  .flow-note{margin-top:26px;font-size:1rem;color:var(--ink-soft);line-height:1.85;max-width:70ch;}
+  .flow-note b{color:var(--ink);font-weight:700;border-bottom:2px solid var(--gold-soft);padding-bottom:1px;}
+
+  /* TIMELINE */
+  .tl{position:relative;margin-top:6px;padding-left:4px;}
+  .tl-item{display:grid;grid-template-columns:120px 1fr;gap:26px;padding:22px 0;border-bottom:1px solid var(--line);align-items:start;}
+  @media(max-width:620px){.tl-item{grid-template-columns:1fr;gap:6px;}}
+  .tl-item:last-child{border-bottom:none;}
+  .tl-year{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--vermilion);padding-top:3px;}
+  .tl-body .tt{font-weight:700;color:var(--ink);font-size:1.02rem;margin-bottom:5px;}
+  .tl-body .td{font-size:.93rem;color:var(--ink-soft);line-height:1.7;}
+
+  /* CTA */
+  .pfoot{background:var(--forest);color:var(--cream);padding:70px 0;margin-top:70px;position:relative;overflow:hidden;}
+  .pfoot .contour{position:absolute;bottom:-40%;left:-8%;width:480px;height:480px;opacity:.2;color:var(--gold-soft);}
+  .pfoot-inner{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;}
+  .pfoot a{font-family:var(--mono);font-size:13px;letter-spacing:.04em;text-decoration:none;color:var(--cream);border:1px solid rgba(201,168,87,.4);padding:13px 22px;border-radius:2px;transition:all .25s;display:inline-flex;align-items:center;gap:9px;}
+  .pfoot a:hover{background:var(--gold-soft);color:var(--forest);border-color:var(--gold-soft);}
+  .pfoot .pf-note{font-family:var(--serif);font-size:1.2rem;color:var(--gold-soft);}
+
+  footer.copy{padding:28px 0;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft);}
+
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  @media(prefers-reduced-motion:reduce){.reveal{transition:none;opacity:1;transform:none;}}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<nav id="nav">
+  <div class="brand">KIM&nbsp;TAEGYEONG <b>·</b> ABOUT</div>
+  <a class="back-link" href="index.html">← BACK TO HOME</a>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="phero">
+    <div class="phero-grid"></div>
+    <svg class="contour" viewBox="0 0 400 400" fill="none" aria-hidden="true">
+      <g stroke="currentColor" stroke-width="1">
+        <path d="M200 40 C300 40 360 110 360 210 C360 300 290 360 200 360 C110 360 40 300 40 210 C40 120 100 40 200 40Z"/>
+        <path d="M200 90 C272 90 312 142 312 208 C312 278 262 312 200 312 C138 312 88 272 88 206 C88 142 138 90 200 90Z" opacity=".7"/>
+        <path d="M200 140 C246 140 268 174 268 206 C268 248 236 268 200 268 C164 268 132 246 132 204 C132 174 154 140 200 140Z" opacity=".5"/>
+        <path d="M200 185 C220 184 226 196 227 206 C228 222 217 228 200 228 C183 228 174 219 175 205 C176 194 185 186 200 185Z" opacity=".35"/>
+      </g>
+    </svg>
+    <div class="container phero-inner">
+      <div class="meta">ABOUT ME</div>
+      <h1>아이디어를 설명하는 데서 멈추지 않고,<br><b>직접 만들어내는 사람</b>이 되기까지.</h1>
+      <p class="sub">기획에서 시작해, 그 기획을 실제로 동작하는 서비스로 구현하는 풀스택 개발자입니다. 무엇을·누구를 위해·왜 만드는지를 먼저 정의하고, 그 답을 데이터 구조와 코드로 끝까지 책임지는 과정을 가장 좋아합니다.</p>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- STORY -->
+    <section class="sec">
+      <div class="sec-head reveal">
+        <span class="sec-num">01</span>
+        <h2 class="sec-title">기획에서 구현으로</h2>
+        <span class="sec-sub">// WHY I BUILD</span>
+      </div>
+      <div class="sec-rule reveal"></div>
+
+      <div class="story reveal">
+        <p>개발을 시작하기 전, 저는 <strong>지적학을 전공하며 공간정보와 데이터의 기초</strong>를 다졌습니다. 그 과정에서 두 번의 캡스톤 프로젝트를 기획하고 팀을 이끌며, 문제를 정의하고 해결책을 설계하는 일에 깊이 몰입했습니다.</p>
+
+        <p>그런데 캡스톤을 진행할수록 한 가지가 계속 아쉬웠습니다. 좋은 아이디어라고 믿었지만, <strong>그 아이디어를 실제로 눈앞에서 보여줄 수는 없었다</strong>는 점이었습니다. 결국 '성과'와 '실현 가능성'을 말로 설명하는 데서 멈춰야 했고, 심사위원도 저도 완성된 모습을 상상에 맡길 수밖에 없었습니다.</p>
+
+        <p class="pull">"설명하는 사람에서, 직접 만들어 보여주는 사람이 되자."</p>
+
+        <p>그 아쉬움이 저를 풀스택 개발로 이끌었습니다. 기획만 하는 사람을 넘어, <strong>머릿속의 구조를 실제로 동작하는 화면과 데이터로 구현</strong>하고 싶었습니다. 부트캠프에서 백엔드와 프론트엔드를 모두 익히고, 두 번의 팀 프로젝트에서 기획·설계·구현을 끝까지 직접 책임지며 그 목표에 다가갔습니다.</p>
+
+        <p>이제는 아이디어를 말로 설명하는 대신, <strong>실제로 클릭되고 동작하는 서비스로 증명</strong>할 수 있게 되었습니다. 이 포트폴리오의 프로젝트들이 그 증거입니다.</p>
+      </div>
+    </section>
+
+    <!-- APPROACH -->
+    <section class="sec">
+      <div class="sec-head reveal">
+        <span class="sec-num">02</span>
+        <h2 class="sec-title">제가 일하는 방식</h2>
+        <span class="sec-sub">// HOW I THINK</span>
+      </div>
+      <div class="sec-rule reveal"></div>
+
+      <p class="flow-note reveal" style="margin-top:0;margin-bottom:30px;">
+        기능부터 만들기 시작하지 않습니다. 제가 가장 재미있어 하고 또 잘하는 부분은, <b>이걸 왜 만드는지 분석하고, 누구를 위한 것인지 정한 뒤, 그 사람에게 꼭 필요한 기능이 무엇인지 설계하는</b> 앞단의 과정입니다.
+      </p>
+
+      <div class="flow reveal">
+        <div class="flow-step">
+          <div class="n">STEP 01 · WHY</div>
+          <div class="t">왜 만드는가</div>
+          <div class="d">이 서비스가 풀어야 할 문제가 무엇인지, 기존 방식의 어떤 불편에서 출발하는지를 먼저 분석합니다. 목적이 분명해야 흔들리지 않는 서비스가 나온다고 믿습니다.</div>
+        </div>
+        <div class="flow-step">
+          <div class="n">STEP 02 · WHO</div>
+          <div class="t">누구를 위한 것인가</div>
+          <div class="d">타겟 사용자를 구체적으로 정의합니다. 모두를 위한 기능은 결국 누구에게도 맞지 않기에, 핵심 사용자의 상황과 맥락을 기준으로 우선순위를 잡습니다.</div>
+        </div>
+        <div class="flow-step">
+          <div class="n">STEP 03 · WHAT</div>
+          <div class="t">무엇이 필요한가</div>
+          <div class="d">정의한 사용자에게 꼭 필요한 기능을 추려 설계합니다. 그리고 그 기능이 안정적으로 동작하도록 데이터 구조와 로직까지 직접 설계·구현합니다.</div>
+        </div>
+      </div>
+
+      <p class="flow-note reveal">
+        그래서 문제가 생겼을 때도 눈에 보이는 증상을 덮는 대신 <b>구조에서 원인을 찾아 해결</b>합니다. 실제로 두 프로젝트에서 행정경계 GeoJSON을 라이브러리 없이 직접 지도로 변환하고, 이미 확정된 DB 스키마를 재설계해 상품별 부분취소를 가능하게 만든 것도 이런 방식에서 나온 결과입니다.
+      </p>
+    </section>
+
+    <!-- TIMELINE -->
+    <section class="sec">
+      <div class="sec-head reveal">
+        <span class="sec-num">03</span>
+        <h2 class="sec-title">걸어온 길</h2>
+        <span class="sec-sub">// TIMELINE</span>
+      </div>
+      <div class="sec-rule reveal"></div>
+
+      <div class="tl reveal">
+        <div class="tl-item">
+          <div class="tl-year">~ 2023</div>
+          <div class="tl-body">
+            <div class="tt">명지전문대 지적과</div>
+            <div class="td">지적학·공간정보의 기초를 다지고, 두 번의 캡스톤 프로젝트를 기획·주도하며 문제 정의와 설계의 즐거움을 경험했습니다.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">2021 — 2022</div>
+          <div class="tl-body">
+            <div class="tt">캡스톤 디자인 우수상 · 장려상</div>
+            <div class="td">지목설정 체계 개선, 항공측량 기반 공간정보 사업화 방안 등을 팀장으로 기획·발표. 아이디어를 '구현'까지 밀어붙이고 싶다는 갈증을 느낀 시기입니다.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">2023.09</div>
+          <div class="tl-body">
+            <div class="tt">지적산업기사 취득</div>
+            <div class="td">한국산업인력공단. 공간정보 분야의 전문성을 자격으로 증명했습니다.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">2026</div>
+          <div class="tl-body">
+            <div class="tt">KH정보교육원 풀스택 과정 수료</div>
+            <div class="td">Java·Spring 백엔드부터 React(Next.js) 프론트엔드까지. '직접 만드는 사람'이 되기 위한 본격적인 전환점이었습니다.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">2026.03 — 06</div>
+          <div class="tl-body">
+            <div class="tt">두 번의 팀 프로젝트 — 집사상점 · 전북로</div>
+            <div class="td">추천 로직·동적 SQL·관리자 시스템부터 GeoJSON 지도 변환·주문 구조 재설계까지, 기획·설계·구현을 끝까지 직접 책임졌습니다.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- CTA -->
+  <section class="pfoot">
+    <svg class="contour" viewBox="0 0 400 400" fill="none" aria-hidden="true">
+      <g stroke="currentColor" stroke-width="1">
+        <path d="M200 40 C300 40 360 110 360 210 C360 300 290 360 200 360 C110 360 40 300 40 210 C40 120 100 40 200 40Z"/>
+        <path d="M200 110 C262 108 290 158 292 206 C294 262 248 292 200 292 C150 292 108 258 110 202 C112 152 145 112 200 110Z" opacity=".6"/>
+      </g>
+    </svg>
+    <div class="container pfoot-inner">
+      <span class="pf-note">— 이제, 직접 만든 것들을 볼 차례입니다</span>
+      <a href="index.html#projects">프로젝트 보러 가기 →</a>
+    </div>
+  </section>
+
+  <footer class="copy">© 2026 KIM TAEGYEONG · 기획과 구조 설계를 함께 고민하는 개발자</footer>
+
+</div>
+
+<script>
+  const nav=document.getElementById('nav');
+  const onScroll=()=>nav.classList.toggle('scrolled',window.scrollY>40);
+  window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:0.1,rootMargin:'0px 0px -6% 0px'});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
