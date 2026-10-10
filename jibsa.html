@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>집사상점 · 김태경 포트폴리오</title>
+<meta name="description" content="반려동물 쇼핑몰·커뮤니티 집사상점 — 추천 로직, 동적 SQL, 주문 부분취소 재설계, 관리자 시스템 구현 상세." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+
+<style>
+  :root{
+    --paper:#EFEADB; --paper-2:#E5DECB;
+    --forest:#14302A; --forest-2:#1C3D35;
+    --ink:#16302A; --ink-soft:#42564E;
+    --cream:#F4F0E4; --gold:#BE9038; --gold-soft:#C9A857; --vermilion:#BC4A30; --teal:#2E7D5B;
+    --line:rgba(22,48,42,.14); --line-strong:rgba(22,48,42,.28); --line-cream:rgba(244,240,228,.16);
+    --serif:'Gowun Batang', serif;
+    --sans:'Pretendard', -apple-system, sans-serif;
+    --mono:'IBM Plex Mono', monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+  ::selection{background:var(--gold);color:var(--forest);}
+
+  .grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:64px 64px;opacity:.5;
+    -webkit-mask-image:radial-gradient(ellipse 120% 90% at 50% 20%,#000 40%,transparent 100%);
+            mask-image:radial-gradient(ellipse 120% 90% at 50% 20%,#000 40%,transparent 100%);}
+  .wrap{position:relative;z-index:1;}
+  .container{max-width:1080px;margin:0 auto;padding:0 28px;}
+  .mono{font-family:var(--mono);}
+
+  nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;justify-content:space-between;align-items:center;
+    padding:16px 28px;transition:background .35s,padding .35s,box-shadow .35s;}
+  nav.scrolled{background:rgba(239,234,219,.9);backdrop-filter:blur(10px);padding:11px 28px;box-shadow:0 1px 0 var(--line);}
+  .brand{font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--ink);font-weight:500;}
+  .brand b{color:var(--vermilion);}
+  .back-link{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--ink-soft);text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:color .25s,gap .25s;}
+  .back-link:hover{color:var(--ink);gap:12px;}
+
+  .phero{position:relative;background:var(--forest);color:var(--cream);padding:150px 0 70px;overflow:hidden;}
+  .phero .contour{position:absolute;top:-18%;right:-10%;width:620px;height:620px;opacity:.32;color:var(--gold-soft);}
+  .phero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--line-cream) 1px,transparent 1px),linear-gradient(90deg,var(--line-cream) 1px,transparent 1px);background-size:80px 80px;
+    -webkit-mask-image:radial-gradient(ellipse 90% 90% at 60% 30%,#000 10%,transparent 80%);mask-image:radial-gradient(ellipse 90% 90% at 60% 30%,#000 10%,transparent 80%);}
+  .phero-inner{position:relative;z-index:2;}
+  .phero .meta{font-family:var(--mono);font-size:12px;letter-spacing:.16em;color:var(--gold-soft);text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:12px;}
+  .phero .meta::before{content:'';width:30px;height:1px;background:var(--gold-soft);}
+  .phero h1{font-family:var(--serif);font-size:clamp(2.6rem,7vw,4.8rem);font-weight:700;line-height:1.02;letter-spacing:-.01em;}
+  .phero h1 .ko{display:block;font-size:.32em;font-family:var(--mono);font-weight:400;letter-spacing:.2em;color:var(--gold-soft);margin-top:18px;}
+  .phero .desc{font-size:1.06rem;color:rgba(244,240,228,.85);max-width:54ch;margin-top:28px;line-height:1.75;}
+  .phero .facts{display:flex;flex-wrap:wrap;gap:34px;margin-top:38px;}
+  .phero .fact .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:6px;}
+  .phero .fact .v{font-size:.92rem;color:var(--cream);}
+  .stack-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:30px;}
+  .chip{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em;padding:5px 12px;border:1px solid rgba(201,168,87,.4);border-radius:2px;color:var(--cream);background:rgba(244,240,228,.05);}
+
+  .group{padding:90px 0 10px;}
+  .group:first-of-type{padding-top:80px;}
+  .group-head{display:flex;align-items:baseline;gap:16px;margin-bottom:14px;}
+  .group-num{font-family:var(--mono);font-size:13px;color:var(--vermilion);}
+  .group-title{font-family:var(--serif);font-size:clamp(1.5rem,3.6vw,2.1rem);font-weight:700;}
+  .group-sub{font-family:var(--mono);font-size:12px;color:var(--ink-soft);letter-spacing:.06em;margin-left:auto;align-self:center;}
+  @media(max-width:680px){.group-sub{display:none;}}
+  .group-rule{height:1px;background:var(--line-strong);margin-bottom:40px;}
+
+  .spotlight{background:var(--forest);color:var(--cream);border-radius:4px;padding:36px 38px;margin-bottom:64px;position:relative;overflow:hidden;}
+  .spotlight .contour{position:absolute;top:-30%;right:-6%;width:340px;height:340px;opacity:.28;color:var(--gold-soft);}
+  .spotlight .sp-tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:14px;position:relative;z-index:2;}
+  .spotlight h3{font-family:var(--serif);font-size:1.6rem;font-weight:700;margin-bottom:16px;position:relative;z-index:2;}
+  .spotlight p{font-size:.98rem;color:rgba(244,240,228,.85);line-height:1.8;max-width:62ch;position:relative;z-index:2;margin-bottom:14px;}
+  .spotlight p b{color:var(--gold-soft);font-weight:700;}
+  .sp-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-cream);margin-top:24px;position:relative;z-index:2;}
+  @media(max-width:680px){.sp-steps{grid-template-columns:1fr;}}
+  .sp-step{background:var(--forest);padding:20px 22px;}
+  .sp-step .n{font-family:var(--mono);font-size:11px;color:var(--vermilion);margin-bottom:8px;}
+  .sp-step .t{font-size:.9rem;color:var(--cream);line-height:1.6;}
+
+  .entry{margin-bottom:64px;}
+  .entry-head{display:flex;align-items:baseline;gap:14px;margin-bottom:22px;}
+  .entry-num{font-family:var(--mono);font-size:12px;color:var(--gold);letter-spacing:.04em;padding-top:3px;}
+  .entry-title{font-family:var(--serif);font-size:1.4rem;font-weight:700;line-height:1.25;}
+  .entry-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:38px;align-items:start;}
+  @media(max-width:820px){.entry-grid{grid-template-columns:1fr;gap:24px;}}
+  .shots{display:flex;flex-direction:column;gap:14px;}
+
+  .shot{position:relative;border:1px solid var(--line-strong);background:var(--paper-2);border-radius:3px;overflow:hidden;min-height:190px;display:flex;align-items:center;justify-content:center;}
+  .shot img{width:100%;display:block;}
+  .shot.missing{border-style:dashed;}
+  .shot.missing img{display:none;}
+  .shot .ph{display:none;text-align:center;padding:34px 24px;}
+  .shot.missing .ph{display:block;}
+  .shot .ph .ico{font-size:22px;color:var(--ink-soft);opacity:.5;margin-bottom:10px;}
+  .shot .ph .fn{font-family:var(--mono);font-size:11.5px;color:var(--vermilion);word-break:break-all;margin-bottom:6px;}
+  .shot .ph .hint{font-size:11.5px;color:var(--ink-soft);}
+
+  .entry-text p{font-size:.98rem;color:var(--ink-soft);line-height:1.78;margin-bottom:16px;}
+  .entry-text p b{color:var(--ink);font-weight:700;border-bottom:2px solid var(--gold-soft);padding-bottom:1px;}
+  .entry-text .lead{color:var(--ink);font-size:1.02rem;}
+  .tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px;}
+  .tags .t{font-family:var(--mono);font-size:11px;padding:4px 10px;border:1px solid var(--line-strong);border-radius:2px;color:var(--ink);background:rgba(255,255,255,.3);}
+
+  .pfoot{background:var(--forest);color:var(--cream);padding:70px 0;margin-top:60px;position:relative;overflow:hidden;}
+  .pfoot .contour{position:absolute;bottom:-40%;left:-8%;width:480px;height:480px;opacity:.2;color:var(--gold-soft);}
+  .pfoot-inner{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;}
+  .pfoot a{font-family:var(--mono);font-size:13px;letter-spacing:.04em;text-decoration:none;color:var(--cream);border:1px solid rgba(201,168,87,.4);padding:13px 22px;border-radius:2px;transition:all .25s;display:inline-flex;align-items:center;gap:9px;}
+  .pfoot a:hover{background:var(--gold-soft);color:var(--forest);border-color:var(--gold-soft);}
+  .pfoot .pf-note{font-family:var(--serif);font-size:1.2rem;color:var(--gold-soft);}
+
+  footer.copy{padding:28px 0;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft);}
+
+  .erd-sec{padding:80px 0 20px;}
+  .erd-frame{border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;background:#0E141A;cursor:zoom-in;position:relative;}
+  .erd-frame img{width:100%;display:block;transition:transform .3s;}
+  .erd-frame:hover img{transform:scale(1.02);}
+  .erd-frame .zoom{position:absolute;top:12px;right:14px;font-family:var(--mono);font-size:10.5px;color:var(--cream);background:rgba(20,48,42,.7);padding:4px 10px;border-radius:3px;letter-spacing:.04em;}
+  .erd-cap{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-top:12px;text-align:center;letter-spacing:.03em;}
+  .erd-lightbox{position:fixed;inset:0;z-index:200;background:rgba(14,20,26,.94);display:none;align-items:center;justify-content:center;padding:24px;cursor:zoom-out;}
+  .erd-lightbox.open{display:flex;}
+  .erd-lightbox img{max-width:100%;max-height:92vh;border-radius:6px;}
+  .erd-lightbox .lb-close{position:absolute;top:20px;right:26px;font-family:var(--mono);font-size:13px;color:var(--cream);}
+
+  .retro{padding:90px 0 20px;}
+  .retro-case{border:1px solid var(--line-strong);border-radius:8px;background:var(--cream);overflow:hidden;margin-bottom:20px;}
+  .rc-top{display:flex;align-items:center;gap:14px;padding:20px 26px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .rc-id{font-family:var(--mono);font-size:11px;color:var(--vermilion);letter-spacing:.05em;border:1px solid rgba(188,74,48,.3);padding:3px 9px;border-radius:3px;background:rgba(188,74,48,.06);}
+  .rc-name{font-family:var(--serif);font-size:1.2rem;font-weight:700;}
+  .rc-grid{display:grid;grid-template-columns:repeat(3,1fr);}
+  @media(max-width:760px){.rc-grid{grid-template-columns:1fr;}}
+  .rc-col{padding:22px 26px;border-right:1px solid var(--line);}
+  .rc-col:last-child{border-right:none;}
+  @media(max-width:760px){.rc-col{border-right:none;border-bottom:1px solid var(--line);}.rc-col:last-child{border-bottom:none;}}
+  .rc-step{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .rc-step.problem{color:var(--vermilion);}.rc-step.cause{color:var(--gold);}.rc-step.fix{color:var(--teal);}
+  .rc-col p{font-size:.92rem;color:var(--ink-soft);line-height:1.65;}
+  .rc-col p b{color:var(--ink);font-weight:700;}
+  .rc-foot{padding:14px 26px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:7px;background:var(--paper-2);}
+  .rc-foot .tg{font-family:var(--mono);font-size:11px;padding:4px 9px;border:1px solid var(--line-strong);border-radius:2px;color:var(--ink);background:rgba(255,255,255,.3);}
+  .mini-diff{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;margin:8px 0 4px;}
+  @media(max-width:680px){.mini-diff{grid-template-columns:1fr;}}
+  .md-box{border:1px solid var(--line-strong);border-radius:6px;padding:16px;background:var(--paper);}
+  .md-box .mdl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;}
+  .md-box.before .mdl{color:var(--vermilion);}.md-box.after .mdl{color:var(--teal);}
+  .md-node{font-family:var(--mono);font-size:11.5px;padding:7px 10px;border:1px solid var(--line);border-radius:4px;margin-bottom:6px;display:flex;justify-content:space-between;background:var(--cream);}
+  .md-node.child{margin-left:14px;}
+  .md-node .cx{color:var(--vermilion);}.md-node .ok{color:var(--teal);}
+  .md-arrow{font-family:var(--serif);font-size:1.6rem;color:var(--gold);text-align:center;}
+  @media(max-width:680px){.md-arrow{transform:rotate(90deg);}}
+
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  @media(prefers-reduced-motion:reduce){.reveal{transition:none;opacity:1;transform:none;}}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<nav id="nav">
+  <div class="brand">KIM&nbsp;TAEGYEONG <b>·</b> 집사상점</div>
+  <a class="back-link" href="index.html">← BACK TO HOME</a>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="phero">
+    <div class="phero-grid"></div>
+    <svg class="contour" viewBox="0 0 400 400" fill="none" aria-hidden="true">
+      <g stroke="currentColor" stroke-width="1">
+        <path d="M200 40 C300 40 360 110 360 210 C360 300 290 360 200 360 C110 360 40 300 40 210 C40 120 100 40 200 40Z"/>
+        <path d="M200 90 C272 90 312 142 312 208 C312 278 262 312 200 312 C138 312 88 272 88 206 C88 142 138 90 200 90Z" opacity=".7"/>
+        <path d="M200 140 C246 140 268 174 268 206 C268 248 236 268 200 268 C164 268 132 246 132 204 C132 174 154 140 200 140Z" opacity=".5"/>
+        <path d="M200 185 C220 184 226 196 227 206 C228 222 217 228 200 228 C183 228 174 219 175 205 C176 194 185 186 200 185Z" opacity=".35"/>
+      </g>
+    </svg>
+    <div class="container phero-inner">
+      <div class="meta">SEMI PROJECT · 2026.03 — 04 · TEAM</div>
+      <h1>집사상점<span class="ko">JIBSA STORE · 반려동물 쇼핑몰 &amp; 커뮤니티</span></h1>
+      <p class="desc">반려동물의 종류·연령 기반 맞춤 상품 추천과, 반려인 간 소통이 가능한 커뮤니티를 결합한 플랫폼. 사용자 관점에서 문제를 다시 정의하고, 확정된 DB 구조 변경까지 직접 책임진 첫 팀 프로젝트입니다.</p>
+      <div class="facts">
+        <div class="fact"><div class="k">My Role</div><div class="v">추천 로직 · 상품 페이지 · 커뮤니티 · 관리자(주문/취소·신고)</div></div>
+        <div class="fact"><div class="k">Period</div><div class="v">2026.03.03 — 04.07</div></div>
+      </div>
+      <div class="stack-row">
+        <span class="chip">Spring</span><span class="chip">JSP / Servlet</span><span class="chip">MyBatis</span>
+        <span class="chip">Oracle</span><span class="chip">jQuery / Ajax</span><span class="chip">Apache Tomcat</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- GROUP 1: 상품 & 커뮤니티 -->
+    <section class="group">
+      <div class="group-head reveal">
+        <span class="group-num">01</span>
+        <h2 class="group-title">상품 &amp; 커뮤니티</h2>
+        <span class="group-sub">// SHOP &amp; COMMUNITY</span>
+      </div>
+      <div class="group-rule reveal"></div>
+
+      <article class="entry reveal">
+        <div class="entry-head"><span class="entry-num">S-01</span><h3 class="entry-title">메인페이지 — 사용자 맞춤 추천 분기</h3></div>
+        <div class="entry-grid">
+          <div class="shots">
+            <figure class="shot"><img src="img/jibsa-01-main.png" alt="메인 맞춤 추천" onerror="this.closest('.shot').classList.add('missing')"><div class="ph"><div class="ico">🐾</div><div class="fn">jibsa-01-main.png</div><div class="hint">메인 맞춤 추천 영역</div></div></figure>
+          </div>
+          <div class="entry-text">
+            <p class="lead">회원의 반려동물 정보(종류·연령)를 기반으로 맞춤 상품을 추천하는 기능입니다.</p>
+            <p>모든 사용자에게 같은 상품을 노출하지 않기 위해 <b>로그인·펫 등록 여부에 따라 추천 전략을 분기</b>했습니다. 펫 정보가 있으면 종류·연령에 맞는 판매량 상위 상품을, 없거나 비로그인 시에는 전체 인기 상품을 노출합니다.</p>
+            <p>펫 타입·연령·카테고리 조건에 따라 쿼리가 동적으로 구성되도록 설계했고, 정보가 없는 사용자에게도 <b>빈 화면 대신 기본 추천</b>을 제공하도록 처리했습니다.</p>
+            <div class="tags"><span class="t">조건 분기</span><span class="t">동적 쿼리</span><span class="t">추천 로직</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="entry reveal">
+        <div class="entry-head"><span class="entry-num">S-02</span><h3 class="entry-title">상품 목록 — MyBatis 동적 SQL 필터·정렬</h3></div>
+        <div class="entry-grid">
+          <div class="shots">
+            <figure class="shot"><img src="img/jibsa-02-list.png" alt="상품 목록 페이지" onerror="this.closest('.shot').classList.add('missing')"><div class="ph"><div class="ico">🛒</div><div class="fn">jibsa-02-list.png</div><div class="hint">상품 목록 (필터·정렬)</div></div></figure>
+          </div>
+          <div class="entry-text">
+            <p class="lead">검색어·반려동물 유형·카테고리·정렬 조건을 조합해 상품을 조회하는 기능입니다.</p>
+            <p>사용자가 여러 필터를 동시에 선택하거나 일부만 선택할 수 있도록, <b>MyBatis 동적 SQL로 입력된 조건이 있을 때만 쿼리에 추가</b>되게 구현했습니다. 검색어·펫 타입·카테고리는 <b>&lt;if&gt;</b>로 분기하고, 정렬은 <b>&lt;choose&gt;</b>로 가격순·조회순·최신순을 선택하도록 처리해, 필터 조건을 유지한 채 정렬까지 함께 적용되도록 했습니다.</p>
+            <div class="tags"><span class="t">MyBatis</span><span class="t">&lt;if&gt; / &lt;choose&gt;</span><span class="t">다중 필터</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="entry reveal">
+        <div class="entry-head"><span class="entry-num">S-03</span><h3 class="entry-title">상품 상세 — 재고 기반 품절·구매 제어</h3></div>
+        <div class="entry-grid">
+          <div class="shots">
+            <figure class="shot"><img src="img/jibsa-03-detail.png" alt="상품 상세 페이지" onerror="this.closest('.shot').classList.add('missing')"><div class="ph"><div class="ico">📦</div><div class="fn">jibsa-03-detail.png</div><div class="hint">상품 상세 (품절·구매 버튼)</div></div></figure>
+          </div>
+          <div class="entry-text">
+            <p class="lead">재고 수량을 기준으로 품절 여부를 표시하고 구매를 제어하는 기능입니다.</p>
+            <p>재고가 없는 상품인데도 구매 버튼이 눌리면 잘못된 주문이 발생할 수 있다는 문제가 있었습니다. 이를 해결하기 위해 DB의 재고 수량(productStock)을 기준으로 품절을 판단하고, 재고가 0 이하면 <b>품절 상태 표시 + 구매 버튼 disabled</b>를 동시에 적용해 주문 자체가 불가능하도록 제어했습니다.</p>
+            <div class="tags"><span class="t">재고 검증</span><span class="t">JSTL &lt;c:if&gt;</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="entry reveal">
+        <div class="entry-head"><span class="entry-num">S-04</span><h3 class="entry-title">커뮤니티 — 게시판 분기 · 조회수 중복 방지 · 권한 검증</h3></div>
+        <div class="entry-grid">
+          <div class="shots">
+            <figure class="shot"><img src="img/jibsa-04-community.png" alt="커뮤니티 메인" onerror="this.closest('.shot').classList.add('missing')"><div class="ph"><div class="ico">💬</div><div class="fn">jibsa-04-community.png</div><div class="hint">커뮤니티 메인 / 게시글 목록</div></div></figure>
+            <figure class="shot"><img src="img/jibsa-04-comment.png" alt="게시글 상세·댓글 신고" onerror="this.closest('.shot').classList.add('missing')"><div class="ph"><div class="ico">🚩</div><div class="fn">jibsa-04-comment.png</div><div class="hint">게시글 상세 / 댓글 신고 모달</div></div></figure>
+          </div>
+          <div class="entry-text">
+            <p class="lead">3개 게시판으로 구성된 커뮤니티의 등록·상세·수정·삭제와 댓글·신고 기능입니다.</p>
+            <p>게시판 유형에 따라 카테고리 선택 UI를 동적으로 분기하고, 인기/최신 게시글을 ROWNUM 기준으로 출력했습니다. 같은 사용자가 새로고침할 때마다 조회수가 오르는 문제는 <b>쿠키 기반 조회수 중복 방지</b>(유효기간 하루)로 해결했습니다.</p>
+            <p>수정·삭제 권한은 화면에서 버튼을 숨기는 것에 그치지 않고 <b>서버에서도 작성자 여부를 다시 검증</b>해 직접 요청까지 차단했습니다. 댓글 신고는 신고 유형을 코드에 고정하지 않고 <b>별도 테이블(REPORT_TYPE)로 분리</b>해, 유형이 늘어나도 코드 수정 없이 확장할 수 있도록 설계했습니다.</p>
+            <div class="tags"><span class="t">게시판 분기</span><span class="t">쿠키 조회수</span><span class="t">권한 이중 검증</span><span class="t">테이블 분리 설계</span></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- GROUP 2: 관리자 -->
+    <section class="group">
+      <div class="group-head reveal">
+        <span class="group-num">02</span>
+        <h2 class="group-title">관리자 시스템</h2>
+        <span class="group-sub">// ADMIN</span>
+      </div>
+      <div class="group-rule reveal"></div>
+
+      <!-- SPOTLIGHT: ORDER_DETAIL 부분취소 -->
+      <div class="spotlight reveal">
+        <svg class="contour" viewBox="0 0 400 400" fill="none" aria-hidden="true">
+          <g stroke="currentColor" stroke-width="1">
+            <path d="M200 40 C300 40 360 110 360 210 C360 300 290 360 200 360 C110 360 40 300 40 210 C40 120 100 40 200 40Z"/>
+            <path d="M200 110 C262 108 290 158 292 206 C294 262 248 292 200 292 C150 292 108 258 110 202 C112 152 145 112 200 110Z" opacity=".6"/>
+            <path d="M200 175 C228 174 238 195 239 206 C240 226 222 235 200 235 C178 235 162 224 163 202 C164 188 178 176 200 175Z" opacity=".4"/>
+          </g>
+        </svg>
+        <div class="sp-tag">★ 핵심 작업 · KEY CONTRIBUTION</div>
+        <h3>주문 부분취소 — ORDER_DETAIL 설계 변경</h3>
+        <p>개발 중, 주문 취소가 <b>주문 전체 단위로만 가능</b>해 상품별 개별취소가 안 되는 문제를 발견했습니다. 원인은 취소 상태를 주문 단위로만 관리해 상품별 상태를 담을 구조가 없다는 점이었습니다.</p>
+        <p>이미 확정된 DB 구조를 바꾸는 일이라, <b>ORDER_DETAIL에 상품별 상태 컬럼(ORDERED / CANCELLED)을 추가하는 설계 변경을 제안</b>하고, 컬럼 추가로 깨지는 코드는 직접 책임지기로 하고 진행했습니다. 상태 기준이 주문→상품 단위로 바뀌면서 연결된 로직을 전부 다시 구현했습니다.</p>
+        <div class="sp-steps">
+          <div class="sp-step"><div class="n">① 사용자</div><div class="t">마이페이지 주문취소를 상품 단위로 받도록 수정</div></div>
+          <div class="sp-step"><div class="n">② 관리자</div><div class="t">상품별 상태를 계산해 개별 취소·상태 변경 가능하도록 전면 수정</div></div>
+          <div class="sp-step"><div class="n">③ 배송비</div><div class="t">취소되는 상품 단위로 귀책 판단 — 변심은 고객, 하자·지연은 판매자 부담</div></div>
+        </div>
+        <p style="margin-top:22px;">그 결과 한 주문에서 일부 상품만 취소해도 나머지 주문은 정상 유지되고, <b>주문 상태와 실제 상품 상태가 항상 일치하도록 데이터 정합성을 확보</b>했습니다.</p>
+      </div>
+
+      <article class="entry reveal">
+        <div class="entry-head"><span class="entry-num">A-01</span><h3 class="entry-title">상품 등록 — 동적 카테고리 · 업체 모드 전환</h3></div>
+        <div class="entry-grid">
+          <div class="shots">
+            <figure class="shot"><img src="img/jibsa-05-admin-product-add.png" alt="관리자 상품 등록" onerror="this.closest('.shot').classList.add('missing')"><div class="ph"><div class="ico">➕</div><div class="fn">jibsa-05-admin-product-add.png</div><div class="hint">상품 등록 폼</div></div></figure>
+          </div>
+          <div class="entry-text">
+            <p class="lead">상품 기본 정보와 대표·상세 이미지를 등록하고, 반려동물 유형·연령을 분류·추천에 활용하는 기능입니다.</p>
+            <p>카테고리는 값을 코드에 고정하지 않고 <b>PRODUCT_CATEGORY 테이블에서 조회해 동적으로 출력</b>했고, 업체 등록은 사용자 선택(companyMode)에 따라 <b>기존 업체 선택과 신규 등록 UI가 전환</b>되도록 처리했습니다.</p>
+            <div class="tags"><span class="t">동적 카테고리</span><span class="t">UI 모드 전환</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="entry reveal">
+        <div class="entry-head"><span class="entry-num">A-02</span><h3 class="entry-title">상품 관리 — 판매 상태 즉시 전환</h3></div>
+        <div class="entry-grid">
+          <div class="shots">
+            <figure class="shot"><img src="img/jibsa-06-admin-product-list.png" alt="관리자 상품 관리 목록" onerror="this.closest('.shot').classList.add('missing')"><div class="ph"><div class="ico">🗂</div><div class="fn">jibsa-06-admin-product-list.png</div><div class="hint">상품 관리 목록</div></div></figure>
+          </div>
+          <div class="entry-text">
+            <p class="lead">등록된 상품을 카테고리·상태·검색어 조건으로 조회하고 관리하는 페이지입니다.</p>
+            <p>PRODUCT_ACTIVE_YN 값을 기준으로 판매중·판매중지 상태를 표시해 <b>관리자가 즉시 전환</b>할 수 있도록 했고, 상태 변경 시 PRODUCT_ID를 함께 전달해 특정 상품만 정확히 반영되도록 처리했습니다. 수정 버튼을 누르면 기존 데이터를 조회해 <b>수정 페이지에 미리 채워</b> 보여주도록 구현했습니다.</p>
+            <div class="tags"><span class="t">상태 토글</span><span class="t">데이터 prefill</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="entry reveal">
+        <div class="entry-head"><span class="entry-num">A-03</span><h3 class="entry-title">주문 관리 목록 — 주문 상태 동적 계산</h3></div>
+        <div class="entry-grid">
+          <div class="shots">
+            <figure class="shot"><img src="img/jibsa-07-admin-order-list.png" alt="주문 관리 목록" onerror="this.closest('.shot').classList.add('missing')"><div class="ph"><div class="ico">📋</div><div class="fn">jibsa-07-admin-order-list.png</div><div class="hint">주문 관리 통합 목록</div></div></figure>
+          </div>
+          <div class="entry-text">
+            <p class="lead">전체 주문을 통합 조회·관리하는 페이지입니다. 기간·상태·키워드로 검색할 수 있습니다.</p>
+            <p>핵심은 <b>주문 상태 계산 로직</b>입니다. 상품별 취소가 가능한 구조이다 보니 주문 전체 상태를 하나로 표시하기 어려웠는데, <b>ORDER_DETAIL의 상품별 취소 집계값(요청·승인·반려·전체 건수)과 배송 상태를 조합</b>해 정상·부분취소 요청·부분취소 완료·전체취소 완료·부분취소 반려·배송중·배송완료를 동적으로 계산해 표시했습니다.</p>
+            <div class="tags"><span class="t">CASE 집계</span><span class="t">상태 동적 계산</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="entry reveal">
+        <div class="entry-head"><span class="entry-num">A-04</span><h3 class="entry-title">주문 상세 · 취소 관리 — 상품별 처리 · 배송비 귀책</h3></div>
+        <div class="entry-grid">
+          <div class="shots">
+            <figure class="shot"><img src="img/jibsa-08-admin-order-detail.png" alt="주문 상세 관리" onerror="this.closest('.shot').classList.add('missing')"><div class="ph"><div class="ico">🔍</div><div class="fn">jibsa-08-admin-order-detail.png</div><div class="hint">주문 상세 (상품별 취소 관리)</div></div></figure>
+            <figure class="shot"><img src="img/jibsa-09-admin-cancel.png" alt="주문 취소 관리" onerror="this.closest('.shot').classList.add('missing')"><div class="ph"><div class="ico">↩</div><div class="fn">jibsa-09-admin-cancel.png</div><div class="hint">주문 취소 관리 (승인·반려)</div></div></figure>
+          </div>
+          <div class="entry-text">
+            <p class="lead">한 주문 안에서도 일부 상품만 취소하고 나머지는 정상 유지되도록, ORDER_DETAIL 기준으로 상품별 취소를 처리하는 페이지입니다.</p>
+            <p>취소 요청(PENDING) 중인 주문은 <b>배송 상태를 함부로 바꿀 수 없도록 잠가</b> 취소 처리와 배송 상태가 어긋나지 않게 제어했습니다.</p>
+            <p>핵심은 <b>배송비 귀책 판단</b>입니다. 단순 변심·주문 실수는 사용자가, 상품 불량·배송 지연은 판매자가 부담하도록 분기하고, 나아가 <b>배송 진행 여부까지 고려</b>해 배송 전 취소는 배송비를 부과하지 않고 배송이 시작된 뒤의 취소는 사유에 따라 부과·면제를 결정했습니다.</p>
+            <div class="tags"><span class="t">상품 단위 취소</span><span class="t">배송비 귀책 분기</span><span class="t">상태 잠금</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="entry reveal">
+        <div class="entry-head"><span class="entry-num">A-05</span><h3 class="entry-title">댓글 신고 관리 — soft delete · 일괄 처리</h3></div>
+        <div class="entry-grid">
+          <div class="shots">
+            <figure class="shot"><img src="img/jibsa-10-admin-report.png" alt="댓글 신고 관리" onerror="this.closest('.shot').classList.add('missing')"><div class="ph"><div class="ico">🚩</div><div class="fn">jibsa-10-admin-report.png</div><div class="hint">댓글 신고 관리 목록</div></div></figure>
+          </div>
+          <div class="entry-text">
+            <p class="lead">신고된 댓글을 검토·처리하는 페이지입니다. 신고자·대상·유형·내용·상태를 조회하고, 원문까지 확인할 수 있습니다.</p>
+            <p>처리는 댓글을 실제로 삭제하지 않고 COMMENT_ACTIVE_YN 값을 'N'으로 바꿔 화면에서만 가리는 <b>soft delete</b>로 구현해, 데이터를 보존하면서 부적절한 댓글을 비노출했습니다. 신고 건이 많을 수 있어 <b>단건 처리와 선택 일괄 처리를 분리</b>하고, 일괄 처리는 REPORT_ID 목록을 받아 한 번에 비노출하도록 구현했습니다.</p>
+            <div class="tags"><span class="t">soft delete</span><span class="t">일괄 처리</span></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+  </div>
+
+  <!-- ERD -->
+  <div class="container">
+    <section class="erd-sec">
+      <div class="group-head reveal">
+        <span class="group-num">DB</span>
+        <h2 class="group-title">데이터 구조 (ERD)</h2>
+        <span class="group-sub">// SCHEMA</span>
+      </div>
+      <div class="group-rule reveal"></div>
+      <div class="erd-frame reveal" onclick="openLB('img/erd-jibsa.png')">
+        <span class="zoom">클릭하면 확대 ⤢</span>
+        <img src="img/erd-jibsa.png" alt="집사상점 ERD" onerror="this.parentElement.style.display='none'">
+      </div>
+      <p class="erd-cap reveal">회원 · 상품 · 주문/주문상세 · 커뮤니티 · 신고 등으로 구성된 집사상점 전체 스키마</p>
+    </section>
+  </div>
+
+  <!-- RETRO / 문제 해결 -->
+  <div class="container">
+    <section id="retro" class="retro">
+      <div class="group-head reveal">
+        <span class="group-num">★</span>
+        <h2 class="group-title">문제 해결 기록</h2>
+        <span class="group-sub">// 문제 → 원인 → 해결</span>
+      </div>
+      <div class="group-rule reveal"></div>
+
+      <article class="retro-case reveal">
+        <div class="rc-top"><span class="rc-id">CASE 01 · 핵심</span><span class="rc-name">주문 부분취소 — ORDER_DETAIL 구조 재설계</span></div>
+        <div class="rc-grid">
+          <div class="rc-col"><div class="rc-step problem">● 문제</div><p>주문 취소가 <b>주문 전체 단위로만</b> 가능해, 한 주문에 담긴 여러 상품 중 일부만 취소할 방법이 없었습니다. 사용자 관점에서 명백한 불편이었습니다.</p></div>
+          <div class="rc-col"><div class="rc-step cause">▲ 원인</div><p>취소 상태를 <b>주문 단위로만 관리</b>해, 상품별 상태를 담을 구조 자체가 없었습니다.</p></div>
+          <div class="rc-col"><div class="rc-step fix">✓ 해결</div><p>ORDER_DETAIL에 <b>상품별 상태 컬럼을 추가</b>하고, 마이페이지·관리자·배송비 귀책 로직을 전면 재구현해 데이터 정합성을 확보했습니다.</p></div>
+        </div>
+        <div style="padding:22px 26px;border-top:1px solid var(--line);">
+          <div class="mini-diff">
+            <div class="md-box before">
+              <div class="mdl">Before · 주문 단위</div>
+              <div class="md-node"><span>ORDER #1024</span><span class="cx">CANCELLED</span></div>
+              <div style="font-family:var(--mono);font-size:10.5px;color:var(--vermilion);margin-top:4px;">↳ 일부만 취소 불가 — 전부 취소됨</div>
+            </div>
+            <div class="md-arrow">→</div>
+            <div class="md-box after">
+              <div class="mdl">After · 상품 단위</div>
+              <div class="md-node"><span>ORDER #1024</span><span class="ok">ACTIVE</span></div>
+              <div class="md-node child"><span>사료</span><span class="ok">ORDERED</span></div>
+              <div class="md-node child"><span>장난감</span><span class="cx">CANCELLED</span></div>
+              <div style="font-family:var(--mono);font-size:10.5px;color:var(--teal);margin-top:4px;">↳ 상품별 상태 관리 → 정합성 확보</div>
+            </div>
+          </div>
+        </div>
+        <div class="rc-foot"><span class="tg">스키마 재설계</span><span class="tg">상태 동적 계산(CASE)</span><span class="tg">배송비 귀책 분기</span><span class="tg">데이터 정합성</span></div>
+      </article>
+    </section>
+  </div>
+
+  <!-- FOOTER NAV -->
+  <section class="pfoot">
+    <svg class="contour" viewBox="0 0 400 400" fill="none" aria-hidden="true">
+      <g stroke="currentColor" stroke-width="1">
+        <path d="M200 40 C300 40 360 110 360 210 C360 300 290 360 200 360 C110 360 40 300 40 210 C40 120 100 40 200 40Z"/>
+        <path d="M200 110 C262 108 290 158 292 206 C294 262 248 292 200 292 C150 292 108 258 110 202 C112 152 145 112 200 110Z" opacity=".6"/>
+      </g>
+    </svg>
+    <div class="container pfoot-inner">
+      <span class="pf-note">— 구조에서부터 바로잡는 개발</span>
+      <a href="index.html">← 다른 프로젝트 보기 / HOME</a>
+    </div>
+  </section>
+
+  <footer class="copy">© 2026 KIM TAEGYEONG · 집사상점 PROJECT</footer>
+
+</div>
+
+<div class="erd-lightbox" id="lb" onclick="closeLB()"><span class="lb-close mono">닫기 ✕</span><img id="lbimg" src="" alt="ERD 확대"></div>
+
+<script>
+  function openLB(src){const lb=document.getElementById('lb');document.getElementById('lbimg').src=src;lb.classList.add('open');document.body.style.overflow='hidden';}
+  function closeLB(){document.getElementById('lb').classList.remove('open');document.body.style.overflow='';}
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLB();});
+</script>
+<script>
+  const nav=document.getElementById('nav');
+  const onScroll=()=>nav.classList.toggle('scrolled',window.scrollY>40);
+  window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:0.1,rootMargin:'0px 0px -6% 0px'});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  function scrollToHash(){if(location.hash){var el=document.querySelector(location.hash);if(el){el.scrollIntoView();}}}
+  if(location.hash){window.addEventListener('load',function(){setTimeout(scrollToHash,80);});}
+</script>
+</body>
+</html>
